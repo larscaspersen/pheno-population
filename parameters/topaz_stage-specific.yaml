@@ -1,0 +1,31 @@
+description: >
+  Single-stage PhenoFlex parameters (Caspersen et al. calibration),
+  with stage-specific zc for budbreak / first bloom / full bloom.
+
+par:
+  yc: 40.0336321
+  zc: 181.2843981   # default = first bloom; overridden per stage below
+  s1: 0.1473177
+  Tu: 21.0231964
+  theta_star: 279
+  theta_c: 285.6807267
+  tau: 34.2354385
+  pi_c: 32.6464321
+  Tf: 8.0650228
+  Tc: 36
+  Tb: 5.9122156
+  slope: 1.9426370
+
+zc_stages:
+  budbreak: 50.3515625
+  first_bloom: 181.2843981
+  full_bloom: 208.3857127
+
+distribution:
+  yc_sd: 0
+  zc_sd: 0
+  dist_chill: normal
+  dist_heat: normal
+  add_par: NULL
+  seed: 12345
+  n_pop: 1

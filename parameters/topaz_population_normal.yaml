@@ -1,0 +1,30 @@
+# params/topaz_population_model.yaml
+description: >
+  Population-model PhenoFlex parameters for Topaz, calibrated on
+  Ravensburg 2004-2022 + Hohenheim forcing experiments.
+  Normal distribution
+
+par:
+  yc: 72
+  zc: 230
+  s1: 0.11
+  Tu: 25
+  E0: 4153.5
+  E1: 12888.8
+  A0: 139500
+  A1: 2.567e+18
+  Tf: 4
+  Tc: 36
+  Tb: 4
+  slope: 1.6
+
+scale_yc_budbreak: 0.3
+
+distribution:
+  yc_sd: 10
+  zc_sd: 10
+  dist_chill: normal
+  dist_heat: normal
+  add_par: NULL
+  seed: 12345
+  n_pop: 100
