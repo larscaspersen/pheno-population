@@ -74,10 +74,10 @@ helper_prepare_obs_data <- function(sheet = 'T_2022_term+spur',
 
 # R/data_io.R
 
-load_kob_season <- function(path = 'Ravensburg_hourly_temp.csv',
+load_kob_season <- function(path = 'Ravensburg_hourly_temp_fixed.csv',
                             years = 2004:2022) {
   read.csv(path) %>%
-    genSeasonList(years = years) %>%
+    genSeasonList(years = years,mrange = c(8,5)) %>%
     setNames(years)
 }
 
