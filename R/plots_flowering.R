@@ -63,7 +63,7 @@ helper_plot_flowering <- function(bloom_df,
     ggplot() +
     stat_ecdf(aes(x = value,
                   color = 'Modelled'),
-              geom = 'step', size = 1.5) +
+              geom = 'step', linewidth = 1.5) +
     ylab('Share of buds flowering (%)') +
     xlab('Date') +
     scale_x_continuous(breaks = yday_x_scale_sub, 
@@ -150,7 +150,7 @@ helper_plot_budbreak_orchard <- function(bloom_df,
   
   bloom_df$value_mod <- ifelse(bloom_df$value == placeholder_fail, yes = NA, no = bloom_df$value)
   
-  yday_y_scale <- (floor(min(c(bloom_df$value_mod, obs_df$value), na.rm = TRUE))):(ceiling(max(c(bloom_df$value_mod, obs_df$value), na.rm = TRUE)))
+  yday_y_scale <- (floor(min(c(bloom_df$value_mod, obs_df$budbreak), na.rm = TRUE))):(ceiling(max(c(bloom_df$value_mod, obs_df$budbreak), na.rm = TRUE)))
   yday_y_scale_label <- as.Date(yday_y_scale,
                                 origin = '2021-12-31') %>% 
     format("%b %d")
@@ -199,4 +199,4 @@ helper_plot_budbreak_orchard <- function(bloom_df,
     
   }
   return(p_budbreak)
-}  
+}

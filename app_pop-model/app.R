@@ -3,115 +3,26 @@ library(bslib)
 library(patchwork)
 options(shiny.sanitize.errors = FALSE)
 
-source('experimental/app_pop-model/helpers_phenoflex_pop.R')
+# Support both source('app_pop-model/app.R') and shiny::runApp('app_pop-model').
+helper_path <- if (file.exists('helpers_phenoflex_pop.R')) {
+  'helpers_phenoflex_pop.R'
+} else {
+  'app_pop-model/helpers_phenoflex_pop.R'
+}
+source(helper_path, local = TRUE)
 
 
-default_params <- list(
-  yc = 75,
-  yc_sd = 5,
-  zc = 181,
-  zc_sd = 10,
-  s1 = 0.1473177,
-  theta_star = 280.04901-273.15,
-  theta_c = 286.05151-273.15,
-  tau = 27.88297,
-  pi_c = 30.41736,
-  Tf = 4,
-  slope = 1.6,
-  Tb = 4,
-  Tu = 25,
-  Tc = 36,
-  adjust_zc=1
-)
+default_config <- load_population_params(file.path(
+  app_project_root, 'parameters', app_default_parameter_file))
+default_params <- app_parameter_inputs(default_config)
 
-default_par_optimized <- list(
-  yc = 61.1571429,
-  yc_sd = 10.8367347,
-  zc = 230,
-  zc_sd = 10,
-  s1 = 0.1662224,
-  theta_star = 280.04901-273.15,
-  theta_c = 286.05151-273.15,
-  tau = 27.88297,
-  pi_c = 30.41736,
-  Tf = 4,
-  slope = 1.6,
-  Tb = 4,
-  Tu = 25,
-  Tc = 36,
-  adjust_zc= 1
-)
-
-kob_study_par <- list(
-  yc = 40.0336321,
-  yc_sd = 5,
-  zc = 181.2843981,
-  zc_sd = 10,
-  s1 = 0.1473177,
-  theta_star = 279-273.15,
-  theta_c = 285.6807267-273.15,
-  tau = 34.2354385,
-  pi_c = 32.6464321,
-  Tf = 8.0650228,
-  slope = 1.9426370,
-  Tb = 5.9122156,
-  Tu = 21.0231964,
-  Tc = 36,
-  adjust_zc=1
-)
-
-kob_study_optimized <- list(
-  yc = 32.9280536,
-  yc_sd = 4.5112081,
-  zc = 132.8402171,
-  zc_sd = 0.7966561,
-  s1 = 0.3195264,
-  theta_star = 279-273.15,
-  theta_c = 285.6807267-273.15,
-  tau = 34.2354385,
-  pi_c = 32.6464321,
-  Tf = 8.0650228,
-  slope = 1.9426370,
-  Tb = 5.9122156,
-  Tu = 21.0231964,
-  Tc = 36,
-  adjust_zc=1
-)
-
-par_list <- list(default_opt = default_par_optimized,
-                 default_default = default_params,
-                 kob_default = kob_study_par,
-                 kob_opt = kob_study_optimized)
-
-# Define UI for app that draws a histogram ----
+# Parameter controls and model plots.
 ui <- page_sidebar(
   # App title ----
   title = "PhenoFlex Population Model - Forcing Experiment",
   # Sidebar panel for inputs ----
   sidebar = sidebar(
     
-    # actionButton(
-    #   inputId = "run_model",
-    #   label = "Run population model",
-    #   class = "btn-primary"
-    # ),
-    # radioButtons(
-    #   inputId = "plot_type",
-    #   label = "Choose plot type",
-    #   choices = c("Forcing Experiment" = "forcing",
-    #               "Flowering" = "flower",
-    #               'Both' = 'forcing_and_flower'),
-    #   selected = "forcing"
-    # ),
-    # selectInput(
-    #   inputId = "plot_type",
-    #   label = "Choose plot type",
-    #   choices = c("Forcing Experiment" = "forcing",
-    #               "Flowering" = "flower",
-    #               'Forcing and Flowering' = 'forcing_and_flower',
-    #               'Temperature Response' = ''),
-    #   selected = "forcing"
-    # ),
     checkboxInput(
       inputId = "plot_forcing",
       label = "Show Forcing Plot",
@@ -137,137 +48,160 @@ ui <- page_sidebar(
       label = "yc\n(mean chill requirement)",
       min = 10,
       max = 80,
-      value = 40.0336321,
+      value = default_params$yc
     ),
     numericInput(
       inputId = "yc_sd",
       label = "yc sd\n(standard deviation of chill requirement)",
       min = 0,
       max = 20,
-      value = 5
+      value = default_params$yc_sd
     ),
     numericInput(
       inputId = "zc",
       label = "zc\n(mean of heat requirement)",
       min = 100,
       max = 500,
-      value = 181.2843981
+      value = default_params$zc
     ),
     numericInput(
       inputId = "zc_sd",
       label = "zc sd\n(standard deviation of heat requirement)",
       min = 0,
       max = 20,
-      value = 10
+      value = default_params$zc_sd
     ),
     numericInput(
       inputId = "s1",
       label = "s1\n(slope of transition function between chill and heat accumulation)",
       min = 0.01,
       max = 1.5,
-      value = 0.1473177
+      value = default_params$s1
     ),
     numericInput(
       inputId = "adjust_zc",
       label = "conversion heat flowering to budbreak",
       min = 0.1,
       max = 1,
-      value = 1
+      value = default_params$adjust_zc
     ),
     selectizeInput(
       inputId = "dist_chill",
-      label = "Distribution type",
+      label = "Chill requirement distribution",
       choices = c('normal' = 'normal',
-                  'normal skewed' = 'normal-skewerd'),
-      selected = 'normal',
+                  'normal skewed' = 'normal_skewed'),
+      selected = default_params$dist_chill,
       multiple = FALSE
     ),
-    numericInput(
-      inputId = "theta_star",
-      label = "theta_star\n(optimal temperature in °C for chill accumulation)",
-      min = 5,
-      max = 8,
-      value = 279-273.15
+    conditionalPanel(
+      condition = "input.dist_chill == 'normal_skewed'",
+      numericInput('skew_chill', 'Chill distribution skewness', value = default_params$skew_chill)
     ),
-    numericInput(
-      inputId = "theta_c",
-      label = "theta_c\n(critical temperature in K°C for chill accumulation)",
-      min = 12,
-      max = 15,
-      value = 285.6807267-273.15
+    selectizeInput(
+      'dist_heat', 'Heat requirement distribution',
+      choices = c('normal' = 'normal', 'normal skewed' = 'normal_skewed'),
+      selected = default_params$dist_heat, multiple = FALSE
     ),
-    numericInput(
-      inputId = "tau",
-      label = "tau\n(time interval for chill accumulation under optimal conditions)",
-      min = 16,
-      max = 48,
-      value = 34.2354385
+    conditionalPanel(
+      condition = "input.dist_heat == 'normal_skewed'",
+      numericInput('skew_heat', 'Heat distribution skewness', value = default_params$skew_heat)
     ),
-    numericInput(
-      inputId = "pi_c",
-      label = "pi_c\n(time interval leading to chill negation)",
-      min = 24,
-      max = 40,
-      value = 32.6464321
+    numericInput('n_pop', 'Number of buds', value = default_params$n_pop,
+                 min = 1, step = 1),
+    numericInput('seed', 'Random seed (leave empty for random draws)',
+                 value = default_params$seed, min = 0, step = 1),
+    conditionalPanel(
+      condition = "output.chill_parameterization == 'kinetic'",
+      numericInput('E0', 'E0 (activation energy of precursor formation)',
+                   value = default_params$E0, min = 0),
+      numericInput('E1', 'E1 (activation energy of precursor destruction)',
+                   value = default_params$E1, min = 0),
+      numericInput('A0', 'A0 (rate coefficient of precursor formation)',
+                   value = default_params$A0, min = 0),
+      numericInput('A1', 'A1 (rate coefficient of precursor destruction)',
+                   value = default_params$A1, min = 0)
+    ),
+    conditionalPanel(
+      condition = "output.chill_parameterization == 'characteristic'",
+      numericInput(
+        inputId = "theta_star",
+        label = "theta_star\n(optimal temperature in °C for chill accumulation)",
+        min = 5,
+        max = 8,
+        value = default_params$theta_star
+      ),
+      numericInput(
+        inputId = "theta_c",
+        label = "theta_c\n(critical temperature in °C for chill accumulation)",
+        min = 12,
+        max = 15,
+        value = default_params$theta_c
+      ),
+      numericInput(
+        inputId = "tau",
+        label = "tau\n(time interval for chill accumulation under optimal conditions)",
+        min = 16,
+        max = 48,
+        value = default_params$tau
+      ),
+      numericInput(
+        inputId = "pi_c",
+        label = "pi_c\n(time interval leading to chill negation)",
+        min = 24,
+        max = 40,
+        value = default_params$pi_c
+      )
     ),
     numericInput(
       inputId = "Tf",
       label = "Tf\n(temperature for transition from PDBF to DBF)",
       min = 0,
       max = 10,
-      value = 8.0650228
+      value = default_params$Tf
     ),
     numericInput(
       inputId = "slope",
       label = "slope\n(slope of transition function from PDBF to DBF)",
       min = 0.1,
       max = 15,
-      value = 1.9426370
+      value = default_params$slope
     ),
     numericInput(
       inputId = "Tb",
       label = "Tb\n(base temperature heat accumulation)",
       min = 0,
       max = 10,
-      value = 5.9122156
+      value = default_params$Tb
     ),
     numericInput(
       inputId = "Tu",
       label = "Tu\n(optimal temperature heat accumulation)",
       min = 20,
       max = 35,
-      value = 21.0231964
+      value = default_params$Tu
     ),
     numericInput(
       inputId = "Tc",
       label = "Tc\n(critical temperature heat accumulation)",
       min = 30,
       max = 40,
-      value = 36
+      value = default_params$Tc
     ),
     selectInput(
       inputId = 'par_select',
-      label = 'Select parameters optimized for forcing experiment',
-      choices = c("Default par - optimized" = "default_opt",
-                  "Default par - non-optimized" = "default_default",
-                  "KOB study par - non-optimized" = "kob_default",
-                  "KOB study par - optimized" = "kob_opt"),
-      selected = 'default_default',
+      label = 'Parameter YAML file',
+      choices = app_parameter_files,
+      selected = app_default_parameter_file,
       multiple = FALSE,
       selectize = TRUE,
       width = NULL,
       size = NULL
     ),
     actionButton(
-      inputId = "default_params",
-      label = "Default parameters",
+      inputId = "reload_parameters",
+      label = "Reload parameters from YAML",
       class = "btn-secondary"
     ),
-    # actionButton(
-    #   inputId = "kob_params",
-    #   label = "KOB study parameters",
-    #   class = "btn-secondary"
-    # ),
     selectizeInput(
       inputId = "forcing_exp",
       label = "Choose which forcing experiment to plot",
@@ -287,7 +221,7 @@ ui <- page_sidebar(
     ),
     numericInput(
       inputId = "exp_end_yday",
-      label = "Julian Day of earliest cutting experiment",
+      label = "Julian Day of latest cutting experiment",
       min = 1,
       max = 365,
       value = 55
@@ -300,273 +234,171 @@ ui <- page_sidebar(
       multiple = TRUE
     )
   ),
-  # Output: Histogram ----
+  # Combined output for selected plots.
   plotOutput(outputId = "pop_plot")
 )
 
-######
-#debug
-# input <- default_params
-# input$adjust_zc <- 0.5
-# input$forcing_exp= 'T_2022_term+spur'
-# input$exp_start_yday = 300
-# input$exp_end_yday = 55
-# obs_list <-  helper_prepare_obs_data(sheet = input$forcing_exp,
-#                                      start_yday = input$exp_start_yday,
-#                                      end_yday = input$exp_end_yday)
-# 
-# par <- c(input$yc, input$zc, input$s1, input$Tu, input$theta_star + 273.15, input$theta_c + 273.15, input$tau, input$pi_c, input$Tf, input$Tc, input$Tb, input$slope) %>%
-#     LarsChill::convert_parameters()
-# 
-# par_bb <- c(input$yc, input$zc * input$adjust_zc, input$s1, input$Tu, input$theta_star + 273.15, input$theta_c + 273.15, input$tau, input$pi_c, input$Tf, input$Tc, input$Tb, input$slope) %>%
-#   LarsChill::convert_parameters()
-# 
-# pop_out <- helper_run_pop_model(par = par, yc_sd = input$yc_sd, zc_sd = input$zc_sd,
-#                        jday_cut = obs_list$jday_cut, temp_df = obs_list$temp_df,
-#                        n = 100, adjust_zc = input$adjust_zc)
-# 
-# bb_list <- purrr::map(kob_season, function(s1){
-#   bloom <- helper_run_pop_model(par = par_bb, yc_sd = input$yc_sd, zc_sd =  input$zc_sd, jday_cut = NULL, temp_df = s1, n = 100,
-#                                 basic_output = TRUE) %>% 
-#     purrr::pluck('bloomindex') %>% 
-#     purrr::map_dbl(helper_bloomint_to_jday, x = s1) %>% 
-#     return()
-# })
-# bb_out <- do.call(cbind, bb_list) %>% 
-#   as.data.frame() %>% 
-#   setNames(names(kob_season)) %>% 
-#   pivot_longer(cols = everything(), names_to = 'year')
-  
-
-
-#input$forcing_exp, input$exp_start_yday, input$exp_end_yday
-
-######
-
-# Define server logic required to draw a histogram ----
+# Model and plots use the shared helpers and the evalpheno population adapter.
 server <- function(input, output, session) {
-  
-  # Run PhenoFlex Population Model for 2022 season in Bavendorf
-  # Model returns results of Forcing Experiment together with observation of experiment
-  #message("Starting model run")
-  
-  # pop_out <- eventReactive(input$run_model,{
-  #   
-  #   
-  #   par <- c(input$yc, input$zc, input$s1, input$Tu, input$theta_star + 273.15, input$theta_c + 273.15, input$tau, input$pi_c, input$Tf, input$Tc, input$Tb, input$slope) %>% 
-  #   LarsChill::convert_parameters()
-  #   
-  #   helper_run_pop_model(par = par, yc_sd = input$yc_sd, zc_sd = input$zc_sd, jday_cut = jday_cut, temp_df = s, n = 100)
-  #   
-  # })
-  
-  #reset button
-  observeEvent(input$default_params, {
-    
-    updateNumericInput(session, "yc", value = default_params$yc)
-    updateNumericInput(session, "yc_sd", value = default_params$yc_sd)
-    updateNumericInput(session, "zc", value = default_params$zc)
-    updateNumericInput(session, "zc_sd", value = default_params$zc_sd)
-    updateNumericInput(session, "s1", value = default_params$s1)
-    updateNumericInput(session, "adjust_zc", value = default_params$adjust_zc)
-    updateNumericInput(session, "theta_star", value = default_params$theta_star)
-    updateNumericInput(session, "theta_c", value = default_params$theta_c)
-    updateNumericInput(session, "tau", value = default_params$tau)
-    updateNumericInput(session, "pi_c", value = default_params$pi_c)
-    updateNumericInput(session, "Tf", value = default_params$Tf)
-    updateNumericInput(session, "slope", value = default_params$slope)
-    updateNumericInput(session, "Tb", value = default_params$Tb)
-    updateNumericInput(session, "Tu", value = default_params$Tu)
-    updateNumericInput(session, "Tc", value = default_params$Tc)
-    
+  # Show useful validation messages while users edit parameters.
+  model_result <- function(expr) {
+    tryCatch(force(expr), error = function(error) {
+      validate(need(FALSE, conditionMessage(error)))
+    })
+  }
+
+  loaded_params <- reactive({
+    req(input$par_select)
+    input$reload_parameters
+    validate(need(input$par_select %in% app_parameter_files,
+                  'Select a parameter file from the parameters directory.'))
+    model_result(load_population_params(file.path(
+      app_project_root, 'parameters', input$par_select)))
   })
-  
-  #select a set of pre-set parameters
-  observeEvent(input$par_select, {
-    
-    updateNumericInput(session, "yc", value = par_list[[input$par_select]]$yc)
-    updateNumericInput(session, "yc_sd", value = par_list[[input$par_select]]$yc_sd)
-    updateNumericInput(session, "zc", value = par_list[[input$par_select]]$zc)
-    updateNumericInput(session, "zc_sd", value = par_list[[input$par_select]]$zc_sd)
-    updateNumericInput(session, "s1", value = par_list[[input$par_select]]$s1)
-    updateNumericInput(session, "adjust_zc", value = par_list[[input$par_select]]$adjust_zc)
-    updateNumericInput(session, "theta_star", value = par_list[[input$par_select]]$theta_star)
-    updateNumericInput(session, "theta_c", value = par_list[[input$par_select]]$theta_c)
-    updateNumericInput(session, "tau", value = par_list[[input$par_select]]$tau)
-    updateNumericInput(session, "pi_c", value = par_list[[input$par_select]]$pi_c)
-    updateNumericInput(session, "Tf", value = par_list[[input$par_select]]$Tf)
-    updateNumericInput(session, "slope", value = par_list[[input$par_select]]$slope)
-    updateNumericInput(session, "Tb", value = par_list[[input$par_select]]$Tb)
-    updateNumericInput(session, "Tu", value = par_list[[input$par_select]]$Tu)
-    updateNumericInput(session, "Tc", value = par_list[[input$par_select]]$Tc)
-    
+
+  output$chill_parameterization <- reactive({
+    if ('E0' %in% names(loaded_params()$par)) 'kinetic' else 'characteristic'
   })
-  
-  #read phenology data
+  outputOptions(output, 'chill_parameterization', suspendWhenHidden = FALSE)
+
+  observeEvent(loaded_params(), {
+    values <- app_parameter_inputs(loaded_params())
+    for (name in names(values)) {
+      freezeReactiveValue(input, name)
+      if (name %in% c('dist_chill', 'dist_heat')) {
+        updateSelectizeInput(session, name, selected = values[[name]])
+      } else {
+        updateNumericInput(session, name, value = values[[name]])
+      }
+    }
+  })
+
+  par <- reactive({
+    req(input$yc, input$zc, input$s1, input$Tu, input$Tf, input$Tc,
+        input$Tb, input$slope)
+    values <- c(yc = input$yc, zc = input$zc, s1 = input$s1, Tu = input$Tu,
+                Tf = input$Tf, Tc = input$Tc, Tb = input$Tb, slope = input$slope)
+    if ('E0' %in% names(loaded_params()$par)) {
+      req(input$E0, input$E1, input$A0, input$A1)
+      values <- c(values, E0 = input$E0, E1 = input$E1,
+                  A0 = input$A0, A1 = input$A1)
+      validate(need(input$E0 > 0 && input$E1 > input$E0 &&
+                      input$A0 > 0 && input$A1 > 0,
+                    'Kinetic chill parameters require 0 < E0 < E1 and positive rate coefficients.'))
+    } else {
+      req(input$theta_star, input$theta_c, input$tau, input$pi_c)
+      values <- c(values, theta_star = input$theta_star + 273.15,
+                  theta_c = input$theta_c + 273.15,
+                  tau = input$tau, pi_c = input$pi_c)
+      validate(need(input$theta_star < input$theta_c && input$tau > 0 && input$pi_c > 0,
+                    'Chill parameters require theta_star < theta_c and positive time intervals.'))
+    }
+    validate(
+      need(all(is.finite(values)), 'Enter finite parameter values.'),
+      need(input$yc > 0 && input$zc > 0 && input$s1 > 0 && input$slope > 0,
+           'Requirements and slopes must be positive.'),
+      need(input$Tb < input$Tu && input$Tu < input$Tc,
+           'Heat temperatures must satisfy Tb < Tu < Tc.'))
+    model_result(.population_parameter_vector(values))
+  })
+
+  params <- reactive({
+    req(input$yc_sd, input$zc_sd, input$adjust_zc, input$dist_chill,
+        input$dist_heat, input$skew_chill, input$skew_heat, input$n_pop)
+    seed <- input$seed
+    if (is.null(seed) || is.na(seed)) seed <- NULL
+    validate(
+      need(is.finite(input$yc_sd) && input$yc_sd >= 0 &&
+             is.finite(input$zc_sd) && input$zc_sd >= 0,
+           'Population standard deviations must be non-negative.'),
+      need(is.finite(input$adjust_zc) && input$adjust_zc > 0,
+           'The budbreak heat multiplier must be positive.'),
+      need(is.finite(input$n_pop) && input$n_pop >= 1 && input$n_pop == floor(input$n_pop),
+           'The number of buds must be a positive integer.'),
+      need(is.null(seed) || (is.finite(seed) && seed >= 0 && seed == floor(seed)),
+           'Enter a non-negative integer seed or leave it empty.'))
+    config <- loaded_params()
+    config$par <- par()
+    config$scale_yc_budbreak <- input$adjust_zc
+    config$distribution$yc_sd <- input$yc_sd
+    config$distribution$zc_sd <- input$zc_sd
+    config$distribution$dist_chill <- input$dist_chill
+    config$distribution$dist_heat <- input$dist_heat
+    skew <- c(input$skew_chill, input$skew_heat)
+    config$distribution['add_par'] <- list(
+      if (is.null(config$distribution$add_par) && all(skew == 0)) NULL else skew)
+    config$distribution['seed'] <- list(seed)
+    config$distribution$n_pop <- input$n_pop
+    config
+  })
+
   obs_list <- reactive({
     req(input$forcing_exp, input$exp_start_yday, input$exp_end_yday)
-    
-    helper_prepare_obs_data(sheet = input$forcing_exp, 
-                            start_yday = input$exp_start_yday, 
-                            end_yday = input$exp_end_yday)
-    
+    validate(need(all(c(input$exp_start_yday, input$exp_end_yday) %in% 1:365),
+                  'Cutting days must be integers between 1 and 365.'))
+    observations <- model_result(app_prepare_obs_data(
+      sheet = input$forcing_exp, start_yday = input$exp_start_yday,
+      end_yday = input$exp_end_yday))
+    validate(need(length(observations$jday_cut) > 0,
+                  'No cutting experiments fall within the selected days.'))
+    observations
   })
-  
-  par <- reactive({
-    c(input$yc, input$zc, input$s1, input$Tu, input$theta_star + 273.15, input$theta_c + 273.15, input$tau, input$pi_c, input$Tf, input$Tc, input$Tb, input$slope) %>% 
-      LarsChill::convert_parameters()
-  })
-  
-  par_bb <- reactive({
-    c(input$yc, input$zc *input$adjust_zc , input$s1, input$Tu, input$theta_star + 273.15, input$theta_c + 273.15, input$tau, input$pi_c, input$Tf, input$Tc, input$Tb, input$slope) %>% 
-      LarsChill::convert_parameters()
-  })
-  
+
   pop_out <- reactive({
-    
-    helper_run_pop_model(par = par(), yc_sd = input$yc_sd, zc_sd = input$zc_sd, 
-                         jday_cut = obs_list()$jday_cut, temp_df = obs_list()$temp_df, 
-                         n = 100, adjust_zc = input$adjust_zc)
-    
+    req(input$plot_forcing)
+    observations <- obs_list()
+    model_result(run_population_model(
+      temp_df = observations$temp_df, params = params(),
+      jday_cut = observations$jday_cut, stop_at_zc = FALSE))
   })
-  
-  #calculation of the flowerings in KOB. Only run when the checkbox is checked
+
+  selected_seasons <- reactive({
+    req(input$years_bloom)
+    years <- app_select_years(input$years_bloom)
+    validate(need(length(years) > 0, 'Select at least one available orchard year.'))
+    kob_season[years]
+  })
+
   pop_bloom <- reactive({
-    
     req(input$plot_flowering)
-    
-    # test <- helper_run_pop_model(par = par(), yc_sd = input$yc_sd, zc_sd = input$zc_sd, jday_cut = jday_cut, temp_df = s, n = 100,
-    #                      basic_output = TRUE)
-    
-    #calculate population of bloom for kob each season
-    bloom_list <- purrr::map(kob_season, function(s1){
-      bloom <- helper_run_pop_model(par = par(), yc_sd = input$yc_sd, zc_sd =  input$zc_sd, jday_cut = NULL, temp_df = s1, n = 100,
-                                   basic_output = TRUE) %>% 
-        purrr::pluck('bloomindex') %>% 
-        purrr::map_dbl(helper_bloomint_to_jday, x = s1) %>% 
-        return()
-    })
-    do.call(cbind, bloom_list) %>% 
-      as.data.frame() %>% 
-      setNames(names(kob_season)) %>% 
-      pivot_longer(cols = everything(), names_to = 'year')
+    model_result(app_predict_orchard(selected_seasons(), params()))
   })
-  
+
   pop_bb <- reactive({
-    
     req(input$plot_budbreak_orchard)
-    
-    # test <- helper_run_pop_model(par = par(), yc_sd = input$yc_sd, zc_sd = input$zc_sd, jday_cut = jday_cut, temp_df = s, n = 100,
-    #                      basic_output = TRUE)
-    
-    #calculate population of bloom for kob each season
-    bb_list <- purrr::map(kob_season, function(s1){
-      bloom <- helper_run_pop_model(par = par_bb(), yc_sd = input$yc_sd, zc_sd =  input$zc_sd, jday_cut = NULL, temp_df = s1, n = 100,
-                                    basic_output = TRUE) %>% 
-        purrr::pluck('bloomindex') %>% 
-        purrr::map_dbl(helper_bloomint_to_jday, x = s1) %>% 
-        return()
-    })
-    do.call(cbind, bb_list) %>% 
-      as.data.frame() %>% 
-      setNames(names(kob_season)) %>% 
-      pivot_longer(cols = everything(), names_to = 'year')
+    model_result(app_predict_orchard(selected_seasons(), params(), budbreak = TRUE))
   })
-  
 
-  message("Model finished")
-  
   output$pop_plot <- renderPlot({
-    req(pop_out())
-    
-    p_force <- p_flower <- p_tempresp <- p_budbreak_orchard <- NULL
-    
-    if(input$plot_forcing){
-      p_force <- helper_plot_forcing_exp(model_res_list = pop_out(), 
-                                         obs = obs_list()$exp_obs, 
-                                         jday_cut = obs_list()$jday_cut, 
-                                         jday_name = obs_list()$jday_name)
-    } 
-    if(input$plot_flowering){
-      p_flower <- helper_plot_flowering(bloom_df = pop_bloom(), obs_df = kob_bloom, year_select = input$years_bloom)
+    plots <- list()
+    if (isTRUE(input$plot_forcing)) {
+      observations <- obs_list()
+      plots <- c(plots, list(helper_plot_forcing_exp_test(
+        model_res_list = list(pop_out()), obs = observations$exp_obs,
+        jday_cut = observations$jday_cut, jday_name = observations$jday_name,
+        legend_names = 'Modelled')))
     }
-    if(input$plot_budbreak_orchard){
-      #p_tempresp <- LarsChill::get_temp_response_plot(par = par(), temp_values = seq(from = -10, to = 40, by = 0.1))
-      
-      p_budbreak_orchard <- helper_plot_budbreak_orchard(bloom_df = pop_bb(), 
-                                                         obs_df =kob_bloom, 
-                                                         year_select = input$years_bloom)
+    if (isTRUE(input$plot_flowering)) {
+      plots <- c(plots, list(helper_plot_flowering(
+        bloom_df = pop_bloom(), obs_df = kob_bloom,
+        year_select = names(selected_seasons()))))
     }
-    if(input$plot_tempresponse){
-      #p_tempresp <- LarsChill::get_temp_response_plot(par = par(), temp_values = seq(from = -10, to = 40, by = 0.1))
-      
-      p_tempresp <- helper_combined_response_plot(par = par(), temp_values = seq(from = -10, to = 40, by = 0.1))
+    if (isTRUE(input$plot_budbreak_orchard)) {
+      plots <- c(plots, list(helper_plot_budbreak_orchard(
+        bloom_df = pop_bb(), obs_df = kob_bloom,
+        year_select = names(selected_seasons()))))
     }
-    
-    # p_force <- helper_plot_forcing_exp(model_res = pop_out, obs = test, jday_cut = jday_cut)
-    # p_flower <- NULL
-    # p_tempresp <- NULL
-    # n_plot <- 1
-    # 
-    # plot_present <- c(TRUE, FALSE, FALSE)
-    # plot_list <- list(p_force, p_flower, p_tempresp)
-    
-    plot_list <- list(p_force, p_flower, p_budbreak_orchard, p_tempresp)
-    plot_present <- c(input$plot_forcing, input$plot_flowering, input$plot_budbreak_orchard,input$plot_tempresponse)
-    n_plot <- input$plot_forcing + input$plot_flowering + input$plot_budbreak_orchard + input$plot_tempresponse
-    
-    # width_p1 <- 1
-    # if(input$plot_forcing) width_p1 <- 2.5
-    # plot_list[[1]] + (plot_list[[2]] / plot_list[[3]]) +
-    #   plot_layout(widths = c(width_p1, 1))
-    
-    
-    #design the combined plots. keep it flexible, so that all combinations work
-    if(n_plot == 1){
-      plot_list[[which(plot_present)]]
-    } else if(n_plot == 2){
-      p1 <- plot_list[[which(plot_present)[1]]]
-      p2 <- plot_list[[which(plot_present)[2]]]
-      
-      #in case forcing and 
-
-      # plot_height <- 1
-      # if(input$plot_forcing) plot_height <- 2
-      p1 + p2 
-
-
-    } else if(n_plot == 3){
-      # plot_list[[1]] + (plot_list[[2]] / plot_list[[3]]) +
-      #   plot_layout(widths = c(2.5, 1))
-
-      design <- "AAABBB
-                 AAABBB
-                 CCCCCC"
-      
-      plot_list[[which(plot_present)[1]]] + plot_list[[which(plot_present)[2]]] +  plot_list[[which(plot_present)[3]]] +
-        plot_layout(design = design) 
-    } else if(n_plot == 4){
-      design <- "AB
-                 CD"
-      
-      plot_list[[1]] +  plot_list[[2]] +  plot_list[[3]] +  plot_list[[4]] +
-        plot_layout(design = design) 
+    if (isTRUE(input$plot_tempresponse)) {
+      plots <- c(plots, list(model_result(helper_combined_response_plot(
+        par = par(), temp_values = seq(-10, 40, by = 0.1)))))
     }
-    
-    
-    
-    # else if(input$plot_type == 'flower'){
-    #   helper_plot_flowering(model_res = pop_out(), temp_df = s)
-    # } else if(input$plot_type == 'forcing_and_flower'){
-    #   p1 <- helper_plot_forcing_exp(model_res = pop_out(), obs = test, jday_cut = jday_cut)
-    #   p2 <- helper_plot_flowering(model_res = pop_out(), temp_df = s)
-    #   library(patchwork)
-    #   p1+p2+plot_layout(widths = c(3,1))
-    #   
-    #}
+    validate(need(length(plots) > 0, 'Select at least one plot.'))
+    if (length(plots) == 1L) return(plots[[1]])
+    if (length(plots) == 3L) {
+      return(wrap_plots(plots, design = 'AB\nCC'))
+    }
+    wrap_plots(plots, ncol = 2)
   })
-
-  
 }
 
 shinyApp(ui = ui, server = server)
