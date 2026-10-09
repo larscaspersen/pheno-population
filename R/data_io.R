@@ -19,8 +19,8 @@ helper_prepare_obs_data <- function(sheet = 'T_2022_term+spur',
     exp_obs <- exp_obs[exp_obs$yday >= start_yday & exp_obs$yday <= end_yday, ]
   }
   
-  if(grepl(pattern = '2020', x = sheet)) temp_file <- 'hohenheim_aug19-jul20.csv'
-  if(grepl(pattern = '2022', x = sheet)) temp_file <- 'hohenheim_aug21-jul22.csv'
+  if(grepl(pattern = '2020', x = sheet)) temp_file <- 'data/hohenheim_aug19-jul20.csv'
+  if(grepl(pattern = '2022', x = sheet)) temp_file <- 'data/hohenheim_aug21-jul22.csv'
   #read temperature data
   s <- read.csv(temp_file, sep = ';', dec = ',') %>% 
     mutate(Date = lubridate::dmy(Tag),
@@ -74,14 +74,14 @@ helper_prepare_obs_data <- function(sheet = 'T_2022_term+spur',
 
 # R/data_io.R
 
-load_kob_season <- function(path = 'Ravensburg_hourly_temp_fixed.csv',
+load_kob_season <- function(path = 'data/Ravensburg_hourly_temp_fixed.csv',
                             years = 2004:2022) {
   read.csv(path) %>%
     genSeasonList(years = years,mrange = c(8,5)) %>%
     setNames(years)
 }
 
-load_kob_bloom <- function(path = 'Ravensburg_bloom_dates.csv',
+load_kob_bloom <- function(path = 'data/Ravensburg_bloom_dates.csv',
                            variety = 'Topaz') {
   read.csv(path) %>%
     filter(variety == !!variety) %>%
@@ -100,7 +100,7 @@ load_cka_season <- function(path = 'cka_clean.csv',
     setNames(years)
 }
 
-load_topaz_flowering_cka <- function(path = 'topaz_flowering_cka.csv',
+load_topaz_flowering_cka <- function(path = 'data/topaz_flowering_cka.csv',
                                      end_of_bloom_share = 0.9) {
   read.csv(path) %>%
     mutate(share = case_match(name,
