@@ -90,7 +90,7 @@ load_kob_bloom <- function(path = 'data/Ravensburg_bloom_dates.csv',
            budbreak   = lubridate::yday(budbreak))
 }
 
-load_cka_season <- function(path = 'cka_clean.csv',
+load_cka_season <- function(path = 'data/cka_clean.csv',
                             latitude = 50.7,
                             years) {
   read.csv(path) %>%
