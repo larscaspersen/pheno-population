@@ -1,4 +1,4 @@
-source('experimental/R/phenoflex_transition-function.R')
+source('R/phenoflex_transition-function.R')
 
 get_stage_bud <- function(y, z, yc, zc, s1, 
                           py_endo = 0.1,

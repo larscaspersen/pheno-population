@@ -3,7 +3,7 @@ helper_prepare_obs_data <- function(sheet = 'T_2022_term+spur',
                                     start_yday = 300,
                                     end_yday = 55){
   
-  exp_obs <- readxl::read_excel('Time to budbreak data for Sigma.xlsx', 
+  exp_obs <- readxl::read_excel('data/Time to budbreak data for Sigma.xlsx', 
                                 sheet = sheet) %>% 
     group_by(Data) %>% 
     mutate(cumsum = cumsum(Bubble_size)) %>% 

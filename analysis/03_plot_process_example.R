@@ -42,9 +42,12 @@ draw_plot_processes(model_output = pop_out,
                     zc_pop = pop_out$zc_pop, 
                     s1 = par_pop$par[3])
 
-ggsave(filename = 'experimental/fig/manuscript/f3_processes.jpeg',
+ggsave(filename = 'fig/manuscript/f3_processes.jpeg',
        height = 24,
        width = 20, device = 'jpeg', units = 'cm')
+ggsave(filename = 'fig/manuscript/f3_processes.pdf',
+       height = 24, width = 20,  units = 'cm', device = grDevices::cairo_pdf)
+
 
 summarize_processes(obs_data = forcing_obs, 
                     model_out = pop_out, par = par_pop$par)
